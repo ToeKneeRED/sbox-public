@@ -94,6 +94,11 @@ public sealed class Dresser : Component, Component.ExecuteInEditor
 		}
 	}
 
+	protected override void OnDestroy()
+	{
+		CancelDressing();
+	}
+
 	async Task<Clothing> InstallWorkshopClothing( string ident, CancellationToken ct )
 	{
 		if ( string.IsNullOrEmpty( ident ) ) return default;
