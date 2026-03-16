@@ -6,11 +6,28 @@ public static class SceneEditorMenus
 	[Shortcut( "editor.duplicate", "CTRL+D" )]
 	public static void Duplicate()
 	{
-		var selection = EditorScene.Selection.OfType<GameObject>().ToArray();
-
 		using ( SceneEditorSession.Active.UndoScope( "Duplicate Object(s)" ).WithGameObjectCreations().Push() )
 		{
+			SceneTraceResult? tr = null;
+
+			if ( EditorPreferences.PasteAtCursor &&
+				 SceneViewWidget.Current?.LastSelectedViewportWidget is { } viewport &&
+				 viewport.IsValid() )
+			{
+				using ( viewport.GizmoInstance.Push() )
+					if ( viewport.TryGetCursorTracePosition( out var result ) )
+						tr = result;
+			}
+
 			DuplicateInternal();
+
+			if ( tr is { } trace )
+			{
+				EditorScene.PlaceBoundsOnSurface(
+					EditorScene.Selection.OfType<GameObject>(),
+					trace.HitPosition,
+					trace.Normal );
+			}
 		}
 	}
 
@@ -23,17 +40,6 @@ public static class SceneEditorMenus
 		if ( selection.Length == 0 ) return;
 
 		EditorScene.Selection.Clear();
-
-		SceneTraceResult? tr = null;
-
-		if ( EditorPreferences.PasteAtCursor &&
-			 SceneViewWidget.Current?.LastSelectedViewportWidget is { } viewport &&
-			 viewport.IsValid() )
-		{
-			using ( viewport.GizmoInstance.Push() )
-				if ( viewport.TryGetCursorTracePosition( out var result ) )
-					tr = result;
-		}
 
 		var groups = new Dictionary<GameObject, GameObject>( selection.Length );
 		foreach ( var entry in selection )
@@ -52,11 +58,6 @@ public static class SceneEditorMenus
 			entry.Value.AddSibling( clone, false );
 
 			EditorScene.Selection.Add( clone );
-		}
-
-		if ( tr is { } trace )
-		{
-			EditorScene.PlaceBoundsOnSurface( EditorScene.Selection.OfType<GameObject>(), trace.HitPosition, trace.Normal );
 		}
 	}
 
