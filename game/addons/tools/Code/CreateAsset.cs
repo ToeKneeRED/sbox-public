@@ -153,7 +153,44 @@ public static class CreateAsset
 				if ( File.Exists( destPath ) )
 					return;
 
-				File.Copy( sourceFile, destPath );
+				if ( extension.Equals( ".cs" ) )
+				{
+					// Follow identifier naming rules
+					var destFileName = destName[..^extension.Length];
+					HashSet<string> keywords =
+					[
+						"abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const",
+						"continue", "decimal", "default", "delegate", "do", "double", "else", "enum", "event", "explicit", "extern",
+						"false", "finally", "fixed", "float", "for", "foreach", "goto", "if", "implicit", "in", "int", "interface",
+						"internal", "is", "lock", "long", "namespace", "new", "null", "object", "operator", "out", "override", "params",
+						"private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed", "short", "sizeof", "stackalloc",
+						"static", "string", "struct", "switch", "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked",
+						"unsafe", "ushort", "using", "virtual", "void", "volatile", "while"
+					];
+
+					if ( string.IsNullOrWhiteSpace( destFileName )
+					     || char.IsDigit( destFileName[0] )
+					     || (!char.IsLetter( destFileName[0] ) && !destFileName[0].Equals( '_' ) )
+					     || keywords.Contains( destFileName ) )
+					{
+						Log.Error( $"Can't create Component! Invalid name: {destFileName}" );
+						return;
+					}
+
+					using var reader = new StreamReader( sourceFile );
+					using var writer = new StreamWriter( destPath );
+
+					while ( reader.ReadLine() is { } line )
+					{
+						line = line.Replace( "MyComponent", destFileName );
+						writer.WriteLine( line );
+					}
+				}
+				else
+				{
+					File.Copy( sourceFile, destPath );
+				}
+
 				var asset = AssetSystem.RegisterFile( destPath );
 				MainAssetBrowser.Instance?.Local.OnAssetCreated( asset, destPath );
 			} );
