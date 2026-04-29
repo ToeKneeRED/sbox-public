@@ -11,30 +11,43 @@ LiveLobbies {
     gap: 12px;
 
     &.scroll {
-        mask: linear-gradient( to bottom, white, white 80%, black );
+        .lobby-list {
+            mask: linear-gradient( to bottom, white, white 80%, black );
+        }
     }
 
     &:not(.scroll) {
-        mask: linear-gradient( to top, white, white 80%, black );
+        .lobby-list {
+            mask: linear-gradient( to top, white, white 80%, black );
+        }
     }
 
     .lobby-list {
+        max-height: 400px;
         flex-direction: column;
         gap: 5px;
-        max-height: 400px;
         overflow: scroll;
     }
 }
 
-LiveLobbyCard {
-    @include card-hover;
-    border-radius: $rounding-large;
-    flex-shrink: 0;
+LiveLobbyCard
+{
+	@include card-hover;
+	border-radius: $rounding-large;
+	flex-shrink: 0;
 
-    badge {
-        position: absolute;
-        bottom: 4px;
-        right: 4px;
-        border-radius: $rounding-small;
-    }
+	badge
+	{
+		position: absolute;
+		bottom: 4px;
+		right: 4px;
+		border-radius: $rounding-small;
+	}
+
+	&.disabled
+	{
+		opacity: 0.6;
+		pointer-events: none;
+		cursor: default;
+	}
 }

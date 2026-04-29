@@ -125,6 +125,8 @@ internal partial class GameInstanceDll : Engine.IGameInstanceDll
 	/// </summary>
 	public void ResetEnvironment()
 	{
+		using var scope = GlobalContext.GameScope();
+
 		Log.Trace( "Game Menu - ResetEnvironment" );
 
 
@@ -373,6 +375,8 @@ internal partial class GameInstanceDll : Engine.IGameInstanceDll
 
 		if ( gameInstance is null ) return;
 
+		using var scope = GlobalContext.GameScope();
+
 		ConVarSystem.SaveAll();
 
 		// Scope disconnect so we can shutdown game before disconnect and stop game objects from sending network destroy,
@@ -541,7 +545,7 @@ internal partial class GameInstanceDll : Engine.IGameInstanceDll
 	/// <summary>
 	/// Loads the game asynchronously
 	/// </summary>
-	public async Task LoadGamePackageAsync( string ident, GameLoadingFlags flags, CancellationToken ct )
+	public async Task<bool> LoadGamePackageAsync( string ident, GameLoadingFlags flags, CancellationToken ct )
 	{
 		try
 		{
@@ -551,7 +555,10 @@ internal partial class GameInstanceDll : Engine.IGameInstanceDll
 			_loadGameCts?.Dispose();
 			_loadGameCts = CancellationTokenSource.CreateLinkedTokenSource( ct );
 
-			await LoadGamePackageAsyncInternal( ident, flags, _loadGameCts.Token );
+			var token = _loadGameCts.Token;
+			await LoadGamePackageAsyncInternal( ident, flags, token );
+
+			return !token.IsCancellationRequested;
 		}
 		catch ( System.Exception e )
 		{
@@ -561,7 +568,7 @@ internal partial class GameInstanceDll : Engine.IGameInstanceDll
 			{
 				using ( IMenuDll.Current?.PushScope() )
 				{
-					IMenuSystem.Current?.Popup( "error", "Loading Error", $"There was an error when loading this game. {e.Message}" );
+					IModalSystem.Current?.Notice( "Loading Error", $"An error occurred when loading this game.\n\n{e.Message}", "error" );
 				}
 
 				Log.Warning( e, e.Message );
@@ -576,6 +583,8 @@ internal partial class GameInstanceDll : Engine.IGameInstanceDll
 			LoadingScreen.IsVisible = false;
 			LoadingScreen.Media = null;
 		}
+
+		return false;
 	}
 
 	public async Task LoadGamePackageAsyncInternal( string ident, GameLoadingFlags flags, CancellationToken ct )
@@ -726,6 +735,8 @@ internal partial class GameInstanceDll : Engine.IGameInstanceDll
 			// Loading failed
 			if ( newInstance is not null )
 			{
+				using var _ = GlobalContext.GameScope();
+
 				newInstance.Close();
 				newInstance.Shutdown();
 				newInstance = default;

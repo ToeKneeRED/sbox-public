@@ -126,6 +126,7 @@ public class ModalSystem : IModalSystem
 		modal.Org = org;
 		Push( modal );
 	}
+
 	public void Review( Package package )
 	{
 		var modal = new ReviewModal();
@@ -142,6 +143,11 @@ public class ModalSystem : IModalSystem
 	{
 		var modal = new ServerListModal( config );
 		Push( modal );
+	}
+
+	public void Server( Sandbox.Network.LobbyInformation lobby )
+	{
+		Push( new ServerModal { Server = lobby } );
 	}
 
 	public void PlayerList()
